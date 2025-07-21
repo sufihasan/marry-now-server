@@ -82,10 +82,72 @@ async function run() {
         });
 
 
+        // get biodata api
+        app.get('/bioDatas', async (req, res) => {
+
+            try {
+                const biodatas = await biodatasCollection
+                    .find({})
+                    .project({
+                        biodataId: 1,
+                        biodataType: 1,
+                        image: 1,
+                        permanentDivision: 1,
+                        age: 1,
+                        occupation: 1,
+                    })
+                    .toArray();
+
+                res.send(biodatas);
+            } catch (err) {
+                res.status(500).json({ error: 'Failed to fetch biodatas' });
+            }
+        });
+
+        // set biodata to database and make unique id depend on last id
         app.post('/bioDatas', async (req, res) => {
-            const newbiodata = req.body;
-            console.log(newbiodata);
-        })
+            try {
+                const newbiodata = req.body;
+                // console.log(newbiodata);
+
+                // n1: Get the latest biodataId (descending sort)
+                const lastBiodata = await biodatasCollection
+                    .find()
+                    .sort({ biodataId: -1 })
+                    .limit(1)
+                    .toArray();
+
+                // an example output of lastBiodata [  { biodataId: 6, name: 'John', age: 30 } ]
+                //If the database is empty, the result will be: []
+
+                const lastId = lastBiodata.length > 0 ? lastBiodata[0].biodataId : 0;
+
+                // n2: Generate new biodataId
+                const newBiodataId = lastId + 1;
+
+                // n3: Attach it to new data
+                const finalData = {
+                    ...newbiodata,
+                    biodataId: newBiodataId
+
+                };
+
+                // n4: Insert to DB
+                const result = await biodatasCollection.insertOne(finalData);
+
+                res.status(201).send({
+                    success: true,
+                    insertedId: result.insertedId,
+                    biodataId: newBiodataId,
+                    message: 'Biodata created successfully!'
+                });
+
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ success: false, message: 'Something went wrong.' });
+            }
+
+        });
 
 
 
