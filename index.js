@@ -81,6 +81,12 @@ async function run() {
             }
         });
 
+        // to get login user biodata from dashboard
+        app.get('/bioDatas/:email', async (req, res) => {
+            const email = req.params.email;
+            const result = await biodatasCollection.findOne({ email: email });
+            res.send(result);
+        })
 
         // get biodata api
         app.get('/bioDatas', async (req, res) => {
