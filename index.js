@@ -34,8 +34,8 @@ async function run() {
         // make api start
         //---------------
 
-
-        // -------- user related api-------
+        //#######################################
+        // -------- user related api start-------
 
         // save user info , if user already save just update last login
         app.post('/users', async (req, res) => {
@@ -81,12 +81,31 @@ async function run() {
             }
         });
 
+
+        // -------- user related api end-------
+        //#######################################
+
+
+
+        //#######################################
+        // -------- biodata related api start----
+
         // to get login user biodata from dashboard
         app.get('/bioDatas/:email', async (req, res) => {
             const email = req.params.email;
             const result = await biodatasCollection.findOne({ email: email });
             res.send(result);
         })
+
+        // Request premium biodata (status not_premium to pending)
+        app.patch('/bioDatas/premium-request/:id', async (req, res) => {
+            const id = parseInt(req.params.id);
+            const result = await biodatasCollection.updateOne(
+                { biodataId: id },
+                { $set: { bioDataStatus: 'pending' } }
+            );
+            res.send(result);
+        });
 
         // get biodata api
         app.get('/bioDatas', async (req, res) => {
@@ -109,6 +128,9 @@ async function run() {
                 res.status(500).json({ error: 'Failed to fetch biodatas' });
             }
         });
+
+
+
 
         // set biodata to database and make unique id depend on last id
         app.post('/bioDatas', async (req, res) => {
@@ -155,7 +177,8 @@ async function run() {
 
         });
 
-
+        // -------- user related api end-------
+        //#######################################
 
         //---------------
         // make api end
