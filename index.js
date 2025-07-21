@@ -27,6 +27,7 @@ async function run() {
         await client.connect();
 
         const usersCollection = client.db('marryDB').collection('users');
+        const biodatasCollection = client.db('marryDB').collection('biodatas');
 
 
         //---------------
@@ -56,6 +57,34 @@ async function run() {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
             res.send(result);
+        });
+
+        // GET: Get user role by email
+        app.get('/users/:email/role', async (req, res) => {
+            try {
+                const email = req.params.email;
+
+                if (!email) {
+                    return res.status(400).send({ message: 'Email is required' });
+                }
+
+                const user = await usersCollection.findOne({ email });
+
+                if (!user) {
+                    return res.status(404).send({ message: 'User not found' });
+                }
+
+                res.send({ role: user.role || 'user' });
+            } catch (error) {
+                console.error('Error getting user role:', error);
+                res.status(500).send({ message: 'Failed to get role' });
+            }
+        });
+
+
+        app.post('/bioDatas', async (req, res) => {
+            const newbiodata = req.body;
+            console.log(newbiodata);
         })
 
 
