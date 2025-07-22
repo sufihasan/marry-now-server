@@ -59,6 +59,13 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/users', async (req, res) => {
+            const search = req.query.search || '';
+            const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+            const users = await usersCollection.find(query).toArray();
+            res.send(users);
+        });
+
         // delete a favorite biodata from my favorite biodata
         app.patch('/users/remove-favorite', async (req, res) => {
 
