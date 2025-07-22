@@ -123,6 +123,20 @@ async function run() {
             res.send(result);
         });
 
+        // find all favorite biodata
+        app.get('/bioDatas/favorites', async (req, res) => {
+            const email = req.query.email;
+
+            const user = await usersCollection.findOne({ email });
+            if (!user) return res.status(404).send({ message: 'User not found' });
+
+            const biodatas = await biodatasCollection.find({
+                biodataId: { $in: user.favorites.map(id => id) }
+            }).toArray();
+
+            res.send(biodatas);
+        });
+
         // to get login user biodata from dashboard
         app.get('/bioDatas/:email', async (req, res) => {
             const email = req.params.email;
