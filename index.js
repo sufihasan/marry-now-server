@@ -108,6 +108,21 @@ async function run() {
             res.send(result);
         })
 
+        // add new 1:06 pm 22 jul
+        // add fevorite biodata api
+        app.post('/bioDatas/favorites', async (req, res) => {
+            // const { biodataId } = req.params;
+            const { biodataId, userEmail } = req.body;
+            // console.log(typeof biodataId);
+
+            const result = await usersCollection.updateOne(
+                { email: userEmail },
+                { $addToSet: { favorites: biodataId } }
+            );
+
+            res.send(result);
+        });
+
         // to get login user biodata from dashboard
         app.get('/bioDatas/:email', async (req, res) => {
             const email = req.params.email;
