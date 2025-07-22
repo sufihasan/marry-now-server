@@ -121,6 +121,30 @@ async function run() {
             res.send(result);
         })
 
+        // get 3 similar biodata based on biodata type
+        app.get('/biodata/similar/:biodataType', async (req, res) => {
+            const { biodataType } = req.params;
+            const excludeId = req.query.excludeId;
+
+            try {
+
+                const filter = {
+                    biodataType,
+                    biodataId: { $ne: Number(excludeId) } // Exclude current biodata and make sure number
+                };
+
+                const similarBiodatas = await biodatasCollection
+                    .find(filter)
+                    .limit(3) // Limit to 3 results
+                    .toArray();
+
+                res.send(similarBiodatas);
+            } catch (error) {
+                console.error('Error fetching similar biodatas:', error);
+                res.status(500).send({ message: 'Failed to fetch similar biodatas' });
+            }
+        });
+
         // add new 1:06 pm 22 jul
         // add fevorite biodata api
         app.post('/bioDatas/favorites', async (req, res) => {
