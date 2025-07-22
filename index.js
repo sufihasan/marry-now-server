@@ -59,6 +59,19 @@ async function run() {
             res.send(result);
         });
 
+        // delete a favorite biodata from my favorite biodata
+        app.patch('/users/remove-favorite', async (req, res) => {
+
+            const { biodataId, email } = req.body;
+
+            const result = await usersCollection.updateOne(
+                { email },
+                { $pull: { favorites: Number(biodataId) } } // Make sure biodataId id parseInt 
+            );
+
+            res.send(result);
+        });
+
         // GET: Get user role by email
         app.get('/users/:email/role', async (req, res) => {
             try {
