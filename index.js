@@ -90,6 +90,16 @@ async function run() {
         //#######################################
         // -------- biodata related api start----
 
+
+        // GET /biodata/pending-premium --- admin api
+        //Correct Order (Static first, then Dynamic):
+        app.get('/bioDatas/pending-premium', async (req, res) => {
+            // console.log('okk');
+            const result = await biodatasCollection.find({ bioDataStatus: 'pending' }).toArray();
+            // console.log(result);
+            res.send(result);
+        });
+
         // to get login user biodata from dashboard
         app.get('/bioDatas/:email', async (req, res) => {
             const email = req.params.email;
@@ -106,6 +116,8 @@ async function run() {
             );
             res.send(result);
         });
+
+
 
         // get biodata api
         app.get('/bioDatas', async (req, res) => {
