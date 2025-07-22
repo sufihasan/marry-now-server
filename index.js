@@ -100,12 +100,39 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/bioDatas/by-id/:biodataId', async (req, res) => {
+            const biodataId = req.params.biodataId;
+            console.log(biodataId);
+            const biodataIdInt = parseInt(biodataId);
+            const result = await biodatasCollection.findOne({ biodataId: biodataIdInt });
+            res.send(result);
+        })
+
         // to get login user biodata from dashboard
         app.get('/bioDatas/:email', async (req, res) => {
             const email = req.params.email;
             const result = await biodatasCollection.findOne({ email: email });
             res.send(result);
         })
+
+        // Update biodata by email --- new addd
+        app.patch('/bioDatas/:email', async (req, res) => {
+            const email = req.params.email;
+            console.log(email);
+            const updatedData = req.body;
+            // Prevent error: remove _id if it exists
+            delete updatedData._id;
+            console.log(updatedData);
+
+            const result = await biodatasCollection.updateOne(
+                { email },
+                { $set: updatedData }
+            );
+
+            console.log(result);
+
+            res.send(result);
+        });
 
         // Request premium biodata (status not_premium to pending)
         app.patch('/bioDatas/premium-request/:id', async (req, res) => {
@@ -117,7 +144,15 @@ async function run() {
             res.send(result);
         });
 
-
+        // PATCH /biodata/approve-premium/:id
+        app.patch('/bioDatas/approve-premium/:id', async (req, res) => {
+            const id = parseInt(req.params.id);
+            const result = await biodatasCollection.updateOne(
+                { biodataId: id },
+                { $set: { bioDataStatus: 'premium' } }
+            );
+            res.send(result);
+        });
 
         // get biodata api
         app.get('/bioDatas', async (req, res) => {
