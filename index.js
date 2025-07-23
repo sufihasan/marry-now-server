@@ -59,12 +59,41 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/users', async (req, res) => {
-            const search = req.query.search || '';
-            const query = search ? { name: { $regex: search, $options: 'i' } } : {};
-            const users = await usersCollection.find(query).toArray();
-            res.send(users);
+        // app.get('/users', async (req, res) => {
+        //     const search = req.query.search || '';
+        //     const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+        //     const users = await usersCollection.find(query).toArray();
+        //     res.send(users);
+        // });
+
+        // GET /all-users-with-biodata-status?search=roky
+        app.get('/all-users-with-biodata-status', async (req, res) => {
+            try {
+                const search = req.query.search || '';
+                const query = search
+                    ? { name: { $regex: search, $options: 'i' } } // case-insensitive
+                    : {};
+
+                const users = await usersCollection.find(query).toArray();
+
+                const allBiodatas = await biodatasCollection.find({}).toArray();
+                const biodataMap = {};
+
+                allBiodatas.forEach((bio) => {
+                    biodataMap[bio.email] = bio.bioDataStatus || 'not_premium';
+                });
+
+                const usersWithStatus = users.map((user) => ({
+                    ...user,
+                    bioDataStatus: biodataMap[user.email] || 'No Biodata',
+                }));
+
+                res.send(usersWithStatus);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch users.' });
+            }
         });
+
 
         // delete a favorite biodata from my favorite biodata
         app.patch('/users/remove-favorite', async (req, res) => {
