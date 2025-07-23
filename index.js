@@ -154,11 +154,32 @@ async function run() {
 
         // GET /biodata/pending-premium --- admin api
         //Correct Order (Static first, then Dynamic):
+
+
+
         app.get('/bioDatas/pending-premium', async (req, res) => {
             // console.log('okk');
             const result = await biodatasCollection.find({ bioDataStatus: 'pending' }).toArray();
             // console.log(result);
             res.send(result);
+        });
+
+        // GET /bioDatas/premium-members?sort=asc|desc
+        app.get('/bioDatas/premium-members', async (req, res) => {
+            try {
+                const sortOrder = req.query.sort === 'desc' ? -1 : 1;
+
+                const result = await biodatasCollection
+                    .find({ bioDataStatus: 'premium' })
+                    .sort({ age: sortOrder })
+                    .limit(6)
+                    .toArray();
+
+                res.send(result);
+            } catch (error) {
+                // console.error('Error fetching premium members:', error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
         });
 
         app.get('/bioDatas/by-id/:biodataId', async (req, res) => {
