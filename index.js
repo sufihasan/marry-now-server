@@ -247,14 +247,36 @@ async function run() {
         });
 
         // PATCH /biodata/approve-premium/:id
-        app.patch('/bioDatas/approve-premium/:id', async (req, res) => {
-            const id = parseInt(req.params.id);
+        // app.patch('/bioDatas/approve-premium/:id', async (req, res) => {
+        //     const id = parseInt(req.params.id);
+        //     const result = await biodatasCollection.updateOne(
+        //         { biodataId: id },
+        //         { $set: { bioDataStatus: 'premium' } }
+        //     );
+        //     res.send(result);
+        // });
+
+        // PATCH /bioDatas/approve-premium/:idOrEmail
+        app.patch('/bioDatas/approve-premium/:idOrEmail', async (req, res) => {
+            const idOrEmail = req.params.idOrEmail;
+
+            let filter = {};
+            if (idOrEmail.includes('@')) {
+                // It's an email
+                filter = { email: idOrEmail };
+            } else {
+                // It's a biodataId
+                filter = { biodataId: parseInt(idOrEmail) };
+            }
+
             const result = await biodatasCollection.updateOne(
-                { biodataId: id },
+                filter,
                 { $set: { bioDataStatus: 'premium' } }
             );
+
             res.send(result);
         });
+
 
         // get biodata api
         app.get('/bioDatas', async (req, res) => {
