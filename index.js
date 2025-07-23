@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bwnojnb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -107,6 +107,18 @@ async function run() {
 
             res.send(result);
         });
+
+        // api for make admin of a user
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const result = await usersCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { role: 'admin' } }
+            );
+            res.send(result);
+        });
+
 
         // GET: Get user role by email
         app.get('/users/:email/role', async (req, res) => {
