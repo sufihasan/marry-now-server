@@ -182,6 +182,29 @@ async function run() {
             }
         });
 
+        // Get stats for total biodata, boys, girls, married
+        app.get('/bioDatas/stats', async (req, res) => {
+            try {
+                const totalBiodata = await biodatasCollection.estimatedDocumentCount();
+
+                const totalBoys = await biodatasCollection.countDocuments({ biodataType: "Male" });
+                const totalGirls = await biodatasCollection.countDocuments({ biodataType: "Female" });
+
+                // Future logic: completed marriages based on mariteStatus === "married"
+                // const totalMarried = await biodatasCollection.countDocuments({ mariteStatus: "married" });
+
+                res.send({
+                    totalBiodata,
+                    totalBoys,
+                    totalGirls,
+                    // totalMarried
+                });
+            } catch (error) {
+                res.status(500).json({ error: 'Something went wrong' });
+            }
+        });
+
+
         app.get('/bioDatas/by-id/:biodataId', async (req, res) => {
             const biodataId = req.params.biodataId;
             console.log(biodataId);
