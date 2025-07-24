@@ -28,6 +28,8 @@ async function run() {
 
         const usersCollection = client.db('marryDB').collection('users');
         const biodatasCollection = client.db('marryDB').collection('biodatas');
+        const successStoriesCollection = client.db('marryDB').collection('successStories');
+
 
 
         //---------------
@@ -406,6 +408,39 @@ async function run() {
 
         // -------- user related api end-------
         //#######################################
+
+
+
+        //#######################################
+        // -------- success story related api start-------
+
+        // POST new success story
+        app.post('/successStories', async (req, res) => {
+            try {
+                const story = req.body;
+                const result = await successStoriesCollection.insertOne(story);
+                res.status(201).send(result);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to post story', error });
+            }
+        });
+
+        // GET all stories sorted by date (newest first)
+        app.get('/successStories', async (req, res) => {
+            try {
+                const stories = await successStoriesCollection
+                    .find({})
+                    .sort({ marriageDate: -1 }) // Newest first
+                    .toArray();
+                res.json(stories);
+            } catch (error) {
+                res.status(500).json({ message: 'Failed to fetch stories', error });
+            }
+        });
+
+        // -------- success story related api end-------
+        //#######################################
+
 
         //---------------
         // make api end
