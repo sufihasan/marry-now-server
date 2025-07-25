@@ -562,6 +562,99 @@ async function run() {
             }
         });
 
+        // ######################################
+        // contactRequests related api
+        app.get('/contact-requests', async (req, res) => {
+            const requests = await contactRequestsCollection
+                .find({ status: 'pending' })
+                // .find()
+                .toArray();
+            res.send(requests);
+        });
+
+        // api for admin approve  contact request
+        app.patch('/contact-requests/approve/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: 'approved',
+                    approvedAt: new Date(),
+                },
+            };
+            const result = await contactRequestsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+        // api for delete contactact request by user
+        app.delete('/contact-requests/delete/:biodataId', async (req, res) => {
+            // const biodataId = parseInt(req.params.biodataId);
+            const biodataId = req.params.biodataId;
+            console.log(biodataId);
+            const email = req.query.email;
+            console.log(email);
+            const result = await contactRequestsCollection.deleteOne({ biodataId, userEmail: email });
+            console.log(result);
+            res.send(result);
+        });
+
+        app.get('/contact-requests/:userEmail', async (req, res) => {
+            const userEmail = req.params.userEmail;
+
+            try {
+                const pipeline = [
+                    {
+                        $match: { userEmail: userEmail }
+                    },
+                    {
+                        $addFields: {
+                            biodataIdInt: { $toInt: "$biodataId" },
+
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'biodatas',
+                            localField: 'biodataIdInt',
+                            foreignField: 'biodataId',
+                            as: 'biodataInfo'
+                        }
+                    },
+                    {
+                        $unwind: '$biodataInfo'
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            biodataId: 1,
+                            status: 1,
+                            name: '$biodataInfo.name',
+                            email: {
+                                $cond: {
+                                    if: { $eq: ['$status', 'approved'] },
+                                    then: '$biodataInfo.email',
+                                    else: 'Hidden until approved'
+                                }
+                            },
+                            mobile: {
+                                $cond: {
+                                    if: { $eq: ['$status', 'approved'] },
+                                    then: '$biodataInfo.mobile',
+                                    else: 'Hidden until approved'
+                                }
+                            }
+                        }
+                    }
+                ];
+
+                const result = await contactRequestsCollection.aggregate(pipeline).toArray();
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ error: 'Failed to fetch contact requests' });
+            }
+        });
+
+
 
         // -------- payment story related api end-------
         //#######################################
