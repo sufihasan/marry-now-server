@@ -4,6 +4,9 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Use your Stripe secret key
+
+
 //middle ware
 app.use(cors());
 app.use(express.json());
@@ -193,13 +196,13 @@ async function run() {
                 const totalGirls = await biodatasCollection.countDocuments({ biodataType: "Female" });
 
                 // Future logic: completed marriages based on mariteStatus === "married"
-                // const totalMarried = await biodatasCollection.countDocuments({ mariteStatus: "married" });
+                const totalMarried = await successStoriesCollection.estimatedDocumentCount();
 
                 res.send({
                     totalBiodata,
                     totalBoys,
                     totalGirls,
-                    // totalMarried
+                    totalMarried
                 });
             } catch (error) {
                 res.status(500).json({ error: 'Something went wrong' });
@@ -437,6 +440,74 @@ async function run() {
                 res.status(500).json({ message: 'Failed to fetch stories', error });
             }
         });
+
+        app.get("/successStories/full", async (req, res) => {
+            try {
+                // console.log('ok and ok');
+                const successStories = await successStoriesCollection.aggregate([
+                    // Convert string IDs to integers for matching
+                    {
+                        $addFields: {
+                            selfBiodataIdInt: { $toInt: "$selfBiodataId" },
+                            partnerBiodataIdInt: { $toInt: "$partnerBiodataId" }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "biodatas",
+                            localField: "selfBiodataIdInt", // Female
+                            foreignField: "biodataId",
+                            as: "female"
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "biodatas",
+                            localField: "partnerBiodataIdInt", // Male
+                            foreignField: "biodataId",
+                            as: "male"
+                        }
+                    },
+                    { $unwind: "$female" },
+                    { $unwind: "$male" },
+                    {
+                        $sort: {
+                            marriageDate: -1 // newest stories first
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            selfBiodataId: 1,
+                            partnerBiodataId: 1,
+                            coupleImage: 1,
+                            marriageDate: 1,
+                            reviewStar: 1,
+                            review: 1,
+                            female: {
+                                name: 1,
+                                image: 1,
+                                biodataId: 1,
+                                permanentDivision: 1
+                            },
+                            male: {
+                                name: 1,
+                                image: 1,
+                                biodataId: 1,
+                                permanentDivision: 1
+                            }
+                        }
+                    }
+                ]).toArray();
+
+                res.send(successStories);
+            } catch (err) {
+                console.error("Error fetching success stories:", err.message);
+                res.status(500).json({ message: "Internal server error" });
+            }
+        });
+
+
 
         // -------- success story related api end-------
         //#######################################
