@@ -1,10 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Use your Stripe secret key
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Use your Stripe secret key
 
 
 //middle ware
@@ -32,6 +34,7 @@ async function run() {
         const usersCollection = client.db('marryDB').collection('users');
         const biodatasCollection = client.db('marryDB').collection('biodatas');
         const successStoriesCollection = client.db('marryDB').collection('successStories');
+        const contactRequestsCollection = client.db('marryDB').collection("contactRequests")
 
 
 
@@ -512,6 +515,56 @@ async function run() {
         // -------- success story related api end-------
         //#######################################
 
+
+
+
+        //#######################################
+        // -------- payment  related api start---
+
+
+        app.post("/checkout/request-contact", async (req, res) => {
+            try {
+                console.log('payment intent');
+                const { biodataId, userEmail, userName, paymentMethodId, amount } = req.body;
+
+                // Payment processing with Stripe
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount * 100, // convert to cents
+                    currency: "usd",
+                    payment_method_types: ['card'],
+                    payment_method: paymentMethodId,
+                    confirm: true,
+                });
+
+                if (paymentIntent.status === "succeeded") {
+                    const newRequest = {
+                        biodataId,
+                        userEmail,
+                        userName,
+                        status: "pending",
+                        requestAt: new Date(),
+                        stripeId: paymentIntent.id,
+                    };
+
+                    const result = await contactRequestsCollection
+                        .insertOne(newRequest);
+
+                    res.send({ result, transactionId: paymentIntent.id });
+                } else {
+                    res.status(400).send({ message: "Payment failed!" });
+                }
+
+
+
+            } catch (err) {
+                console.error("Payment Error:", err.message);
+                res.status(500).json({ message: err.message });
+            }
+        });
+
+
+        // -------- payment story related api end-------
+        //#######################################
 
         //---------------
         // make api end
