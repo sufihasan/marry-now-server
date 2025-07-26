@@ -521,7 +521,7 @@ async function run() {
         //#######################################
         // -------- payment  related api start---
 
-
+        // payment intent and request contact api
         app.post("/checkout/request-contact", async (req, res) => {
             try {
                 console.log('payment intent');
@@ -541,9 +541,11 @@ async function run() {
                         biodataId,
                         userEmail,
                         userName,
+                        amount,
                         status: "pending",
                         requestAt: new Date(),
-                        stripeId: paymentIntent.id,
+                        paymentMethod: paymentIntent.payment_method_types,
+                        transactionId: paymentIntent.id,
                     };
 
                     const result = await contactRequestsCollection
