@@ -213,13 +213,38 @@ async function run() {
         });
 
 
+        // app.get('/bioDatas/by-id/:biodataId', async (req, res) => {
+        //     const biodataId = req.params.biodataId;
+
+        //     // console.log(biodataId);
+        //     // const biodataIdInt = parseInt(biodataId);
+        //     const biodataIdInt = Number(biodataId);
+        //     if (biodataIdInt === NaN) {
+        //         return;
+        //     } else {
+        //         const result = await biodatasCollection.findOne({ biodataId: biodataIdInt });
+        //         res.send(result);
+        //     }
+
+        // })
+
         app.get('/bioDatas/by-id/:biodataId', async (req, res) => {
             const biodataId = req.params.biodataId;
-            console.log(biodataId);
-            const biodataIdInt = parseInt(biodataId);
+            const biodataIdInt = Number(biodataId);
+
+            if (Number.isNaN(biodataIdInt)) {
+                return res.status(400).send({ error: 'Invalid biodataId' });
+            }
+
             const result = await biodatasCollection.findOne({ biodataId: biodataIdInt });
+
+            if (!result) {
+                return res.status(404).send({ error: 'Biodata not found' });
+            }
+
             res.send(result);
-        })
+        });
+
 
         // get 3 similar biodata based on biodata type
         app.get('/biodata/similar/:biodataType', async (req, res) => {
@@ -261,18 +286,39 @@ async function run() {
         });
 
         // find all favorite biodata
+        // app.get('/bioDatas/favorites', async (req, res) => {
+        //     const email = req.query.email;
+
+        //     const user = await usersCollection.findOne({ email });
+        //     if (!user) return res.status(404).send({ message: 'User not found' });
+
+        //     const biodatas = await biodatasCollection.find({
+        //         biodataId: { $in: user?.favorites?.map(id => id) }
+        //     }).toArray();
+
+        //     res.send(biodatas);
+        // });
+
         app.get('/bioDatas/favorites', async (req, res) => {
             const email = req.query.email;
 
             const user = await usersCollection.findOne({ email });
             if (!user) return res.status(404).send({ message: 'User not found' });
 
+            const favoriteIds = user.favorites || []; // handle undefined
+
+            // If no favorites, return empty array early
+            if (favoriteIds.length === 0) {
+                return res.send([]);
+            }
+
             const biodatas = await biodatasCollection.find({
-                biodataId: { $in: user.favorites.map(id => id) }
+                biodataId: { $in: favoriteIds }
             }).toArray();
 
             res.send(biodatas);
         });
+
 
         // to get login user biodata from dashboard
         app.get('/bioDatas/:email', async (req, res) => {
@@ -439,6 +485,7 @@ async function run() {
                     .sort({ marriageDate: -1 }) // Newest first
                     .toArray();
                 res.json(stories);
+
             } catch (error) {
                 res.status(500).json({ message: 'Failed to fetch stories', error });
             }
@@ -504,6 +551,7 @@ async function run() {
                 ]).toArray();
 
                 res.send(successStories);
+                // res.send([]);
             } catch (err) {
                 console.error("Error fetching success stories:", err.message);
                 res.status(500).json({ message: "Internal server error" });
@@ -660,6 +708,33 @@ async function run() {
 
         // -------- payment story related api end-------
         //#######################################
+
+
+        // admin dash board realated api
+        app.get('/admin/dashboard', async (req, res) => {
+            try {
+                const totalBiodata = await biodatasCollection.estimatedDocumentCount();
+                const maleBiodata = await biodatasCollection.countDocuments({ biodataType: 'Male' });
+                const femaleBiodata = await biodatasCollection.countDocuments({ biodataType: 'Female' });
+                const premiumBiodata = await biodatasCollection.countDocuments({ bioDataStatus: 'premium' });
+
+                const approvedContacts = await contactRequestsCollection.find({ status: 'approved' }).toArray();
+                const totalRevenue = approvedContacts.reduce((acc, req) => acc + (parseInt(req.amount) || 0), 0);
+
+                res.send({
+                    totalBiodata,
+                    maleBiodata,
+                    femaleBiodata,
+                    premiumBiodata,
+                    totalRevenue,
+                });
+            } catch (err) {
+                console.error("Dashboard error:", err.message);
+                res.status(500).send({ message: "Failed to load dashboard stats" });
+            }
+        });
+
+
 
         //---------------
         // make api end
