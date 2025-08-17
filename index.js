@@ -150,6 +150,49 @@ async function run() {
             }
         });
 
+        // GET /users/profile/:email add 17aug
+        app.get('/users/profile/:email', async (req, res) => {
+            try {
+                const email = req.params.email;
+
+                const user = await usersCollection.findOne({ email });
+                if (!user) return res.status(404).send({ message: 'User not found' });
+
+                res.status(200).send(user);
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: 'Failed to fetch user' });
+            }
+        });
+
+
+        // PUT /users/profile
+        app.put('/users/profile/:email', async (req, res) => {
+            try {
+                const email = req.params.email;
+                const { phone, address } = req.body;
+
+                if (!email || !phone || !address) {
+                    return res.status(400).send({ message: 'Email, phone, and address are required' });
+                }
+
+                const userExists = await usersCollection.findOne({ email });
+                if (!userExists) return res.status(404).send({ message: 'User not found' });
+
+                await usersCollection.updateOne(
+                    { email },
+                    { $set: { phone, address } }
+                );
+
+                const updatedUser = await usersCollection.findOne({ email });
+                res.status(200).send({ message: 'Profile updated successfully', updatedUser });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: 'Failed to update profile' });
+            }
+        });
+
+
 
         // -------- user related api end-------
         //#######################################
